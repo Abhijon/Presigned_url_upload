@@ -9,10 +9,10 @@ jobs:
     name: Verify Branch Naming Convention
     runs-on: ubuntu-latest
     steps:
-      - name: Validate Branch Name
+      - name: Validate Branch Namex
         run: |
           BRANCH_NAME="${{ github.head_ref }}"
-          REGEX="^(feature|bugfix|fix|hotfix|chore|refactor|docs)\/[a-zA-Z0-9._-]+$"
+          REGEX="^(feature|bugfix|fix|hotfix|chore|refactor|docs|feat)\/[a-zA-Z0-9._-]+$"
 
           echo "Checking branch name: $BRANCH_NAME"
           if [[ ! "$BRANCH_NAME" =~ $REGEX ]]; then
