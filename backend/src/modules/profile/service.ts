@@ -1,5 +1,6 @@
 import { Profile } from "@prisma/client";
 import profileRepository from "./repository";
+import uploadService from "../upload/service";
 import { generatePresignedDownloadUrl, deleteS3Object } from "../../config/s3";
 import { AppError } from "../../utils";
 import {
@@ -39,6 +40,8 @@ class ProfileService {
 
   /**
    * Creates a new profile after validating required fields.
+   * If a chunked multipart upload was performed, completes chunk merging in S3
+   * before storing the final object key in the DB to maintain consistency.
    */
   async createProfile(data: CreateProfileRequest): Promise<ProfileResponse> {
     // Validate required fields
@@ -64,7 +67,21 @@ class ProfileService {
       throw new AppError("A profile with this email already exists", 409);
     }
 
-    const profile = await profileRepository.create(data);
+    let profilePictureKey = data.profilePictureKey;
+
+    // If multipart upload metadata is provided, complete chunk merging in S3 first
+    if (data.multipartInfo) {
+      await uploadService.completeMultipartUpload(data.multipartInfo);
+      profilePictureKey = data.multipartInfo.key;
+    }
+
+    const profile = await profileRepository.create({
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      age: data.age,
+      profilePictureKey,
+    });
     return this.toResponse(profile);
   }
 
@@ -91,16 +108,11 @@ class ProfileService {
    * Updates a profile.
    *
    * Order of operations for consistency:
-   * 1. Read existing profile
-   * 2. Validate
-   * 3. Update DB (point to new image key first)
-   * 4. Delete old image from S3
+   * 1. Read existing profile & validate
+   * 2. If multipart upload info is present, complete merging in S3 first
+   * 3. Update DB (point to new image key)
+   * 4. Delete old image from S3 if replaced
    * 5. Return response
-   *
-   * DB is updated before S3 cleanup so the database always
-   * references a valid image. If S3 delete fails, we only
-   * have an orphaned S3 object (harmless) rather than the
-   * DB pointing to a deleted image (broken).
    */
   async updateProfile(id: string, data: UpdateProfileRequest): Promise<ProfileResponse> {
     // 1. Read existing profile
@@ -123,22 +135,37 @@ class ProfileService {
       }
     }
 
+    let profilePictureKey = data.profilePictureKey;
+
+    // Handle multipart chunk upload completion if provided
+    if (data.multipartInfo) {
+      await uploadService.completeMultipartUpload(data.multipartInfo);
+      profilePictureKey = data.multipartInfo.key;
+    }
+
     // Capture old key before DB update (needed for S3 cleanup)
     const oldPictureKey = existingProfile.profilePictureKey;
-   const shouldDeleteOldPicture =
-  !!data.profilePictureKey &&
-  !!oldPictureKey &&
-  data.profilePictureKey !== oldPictureKey;
+    const shouldDeleteOldPicture =
+      !!profilePictureKey &&
+      !!oldPictureKey &&
+      profilePictureKey !== oldPictureKey;
 
-    // 3. Update DB first — ensures DB always points to a valid image
-    const updatedProfile = await profileRepository.update(id, data);
+    // 3. Update DB first — ensures DB always points to a valid merged image
+    const updatePayload: UpdateProfileRequest = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      age: data.age,
+      ...(profilePictureKey !== undefined ? { profilePictureKey } : {}),
+    };
+
+    const updatedProfile = await profileRepository.update(id, updatePayload);
 
     // 4. Delete old image from S3 (after DB is already updated)
     if (shouldDeleteOldPicture) {
       try {
         await deleteS3Object(oldPictureKey!);
       } catch (error) {
-        // DB already points to new image — old S3 object is just orphaned (harmless)
         console.error("Failed to delete old profile picture from S3:", error);
       }
     }
@@ -162,7 +189,6 @@ class ProfileService {
         await deleteS3Object(profile.profilePictureKey);
       } catch (error) {
         console.error("Failed to delete profile picture from S3:", error);
-        // Continue with profile deletion even if S3 delete fails
       }
     }
 

@@ -12,10 +12,33 @@ export interface PresignedUrlRequest {
   size: number;
 }
 
-/** Presigned URL response */
-export interface PresignedUrlResponse {
-  key: string;
+/** Individual chunk presigned upload URL details */
+export interface MultipartPartPresignedUrl {
+  partNumber: number;
   uploadUrl: string;
+}
+
+/** Presigned URL response (single or multipart) */
+export interface PresignedUrlResponse {
+  isMultipart: boolean;
+  key: string;
+  uploadUrl?: string;
+  uploadId?: string;
+  chunkSize?: number;
+  parts?: MultipartPartPresignedUrl[];
+}
+
+/** Individual completed chunk ETag & PartNumber info */
+export interface CompletedPart {
+  PartNumber: number;
+  ETag: string;
+}
+
+/** Payload required to finalize an S3 multipart upload merge */
+export interface CompleteMultipartRequest {
+  key: string;
+  uploadId: string;
+  parts: CompletedPart[];
 }
 
 /** Profile data from API */
@@ -37,6 +60,7 @@ export interface CreateProfileRequest {
   phone: string;
   age: number;
   profilePictureKey?: string;
+  multipartInfo?: CompleteMultipartRequest;
 }
 
 /** Update profile request */
@@ -46,6 +70,7 @@ export interface UpdateProfileRequest {
   phone?: string;
   age?: number;
   profilePictureKey?: string;
+  multipartInfo?: CompleteMultipartRequest;
 }
 
 /** Profile form data */
