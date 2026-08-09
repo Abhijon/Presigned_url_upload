@@ -40,9 +40,16 @@ class ProfileRepository {
   }
 
   async update(id: string, data: UpdateProfileRequest): Promise<Profile> {
+    const { name, email, phone, age, profilePictureKey } = data;
     return prisma.profile.update({
       where: { id },
-      data,
+      data: {
+        ...(name !== undefined && { name }),
+        ...(email !== undefined && { email }),
+        ...(phone !== undefined && { phone }),
+        ...(age !== undefined && { age }),
+        ...(profilePictureKey !== undefined && { profilePictureKey }),
+      },
     });
   }
 

@@ -19,6 +19,7 @@ const CreateProfile: React.FC = () => {
 
   const {
     imageKey,
+    multipartInfo,
     previewUrl,
     uploadProgress,
     isUploading,
@@ -44,7 +45,11 @@ const CreateProfile: React.FC = () => {
     createMutation.mutate({
       ...data,
       age: Number(data.age),
-      profilePictureKey: imageKey || undefined,
+      ...(multipartInfo
+        ? { multipartInfo }
+        : imageKey
+        ? { profilePictureKey: imageKey }
+        : {}),
     });
   };
 

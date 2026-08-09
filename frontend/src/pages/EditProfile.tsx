@@ -23,6 +23,7 @@ const EditProfile: React.FC = () => {
 
   const {
     imageKey,
+    multipartInfo,
     previewUrl,
     uploadProgress,
     isUploading,
@@ -54,7 +55,12 @@ const EditProfile: React.FC = () => {
   }, [profile, reset, setExistingPreview]);
 
   const updateMutation = useMutation({
-    mutationFn: (data: ProfileFormData & { profilePictureKey?: string }) =>
+    mutationFn: (
+      data: ProfileFormData & {
+        profilePictureKey?: string;
+        multipartInfo?: any;
+      }
+    ) =>
       profileApi.update(id!, {
         ...data,
         age: Number(data.age),
@@ -73,13 +79,17 @@ const EditProfile: React.FC = () => {
   });
 
   const onSubmit = (data: ProfileFormData) => {
-    const updateData: ProfileFormData & { profilePictureKey?: string } = {
+    const updateData: ProfileFormData & {
+      profilePictureKey?: string;
+      multipartInfo?: any;
+    } = {
       ...data,
       age: Number(data.age),
     };
 
-    // Only include profilePictureKey if a new image was uploaded
-    if (imageKey) {
+    if (multipartInfo) {
+      updateData.multipartInfo = multipartInfo;
+    } else if (imageKey) {
       updateData.profilePictureKey = imageKey;
     }
 

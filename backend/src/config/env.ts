@@ -10,6 +10,8 @@ interface EnvConfig {
   AWS_SECRET_ACCESS_KEY: string;
   S3_BUCKET_NAME: string;
   MAX_FILE_SIZE_MB: number;
+  SINGLE_UPLOAD_LIMIT_MB: number;
+  CHUNK_SIZE_MB: number;
   PRESIGNED_URL_EXPIRY_SECONDS: number;
 }
 
@@ -42,6 +44,8 @@ export const env: EnvConfig = {
   AWS_ACCESS_KEY_ID: getEnvVar("AWS_ACCESS_KEY_ID"),
   AWS_SECRET_ACCESS_KEY: getEnvVar("AWS_SECRET_ACCESS_KEY"),
   S3_BUCKET_NAME: getEnvVar("S3_BUCKET_NAME"),
-  MAX_FILE_SIZE_MB: getEnvVarAsNumber("MAX_FILE_SIZE_MB", 5),
+  MAX_FILE_SIZE_MB: getEnvVarAsNumber("MAX_FILE_SIZE_MB", 100),
+  SINGLE_UPLOAD_LIMIT_MB: getEnvVarAsNumber("SINGLE_UPLOAD_LIMIT_MB", 5),
+  CHUNK_SIZE_MB: getEnvVarAsNumber("CHUNK_SIZE_MB", 5),
   PRESIGNED_URL_EXPIRY_SECONDS: getEnvVarAsNumber("PRESIGNED_URL_EXPIRY_SECONDS", 300),
 };

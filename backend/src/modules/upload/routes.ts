@@ -9,4 +9,9 @@ router.post(
   asyncHandler(uploadController.getPresignedUrl.bind(uploadController))
 );
 
+router.post(
+  "/complete-multipart",
+  asyncHandler(uploadController.completeMultipart.bind(uploadController))
+);
+
 export default router;

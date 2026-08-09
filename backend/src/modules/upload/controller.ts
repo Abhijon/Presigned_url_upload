@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import uploadService from "./service";
-import { PresignedUrlRequest } from "../../types";
+import { PresignedUrlRequest, CompleteMultipartRequest } from "../../types";
 
 /**
  * Upload Controller
@@ -10,7 +10,7 @@ import { PresignedUrlRequest } from "../../types";
 class UploadController {
   /**
    * POST /uploads/presigned-url
-   * Generates a presigned PUT URL for direct S3 upload.
+   * Generates presigned PUT URL(s) for direct S3 upload (single or multipart).
    */
   async getPresignedUrl(req: Request, res: Response): Promise<void> {
     const { filename, contentType, size } = req.body as PresignedUrlRequest;
@@ -24,6 +24,23 @@ class UploadController {
     res.status(200).json({
       success: true,
       data: result,
+    });
+  }
+
+  /**
+   * POST /uploads/complete-multipart
+   * Completes an S3 multipart upload session by merging uploaded chunks.
+   */
+  async completeMultipart(req: Request, res: Response): Promise<void> {
+    const data = req.body as CompleteMultipartRequest;
+
+    await uploadService.completeMultipartUpload(data);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        message: "Multipart upload completed successfully",
+      },
     });
   }
 }

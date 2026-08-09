@@ -1,5 +1,11 @@
-/** Allowed MIME types for profile picture uploads */
-export const ALLOWED_CONTENT_TYPES = ["image/jpeg", "image/png"] as const;
+/** Allowed MIME types for uploads */
+export const ALLOWED_CONTENT_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+] as const;
 
 export type AllowedContentType = (typeof ALLOWED_CONTENT_TYPES)[number];
 
@@ -10,10 +16,33 @@ export interface PresignedUrlRequest {
   size: number;
 }
 
-/** Response from presigned URL generation */
-export interface PresignedUrlResponse {
-  key: string;
+/** Individual chunk presigned upload URL details */
+export interface MultipartPartPresignedUrl {
+  partNumber: number;
   uploadUrl: string;
+}
+
+/** Response from presigned URL generation (handles single and multipart uploads) */
+export interface PresignedUrlResponse {
+  isMultipart: boolean;
+  key: string;
+  uploadUrl?: string;
+  uploadId?: string;
+  chunkSize?: number;
+  parts?: MultipartPartPresignedUrl[];
+}
+
+/** Individual completed chunk ETag & PartNumber info */
+export interface CompletedPart {
+  PartNumber: number;
+  ETag: string;
+}
+
+/** Payload required to finalize an S3 multipart upload merge */
+export interface CompleteMultipartRequest {
+  key: string;
+  uploadId: string;
+  parts: CompletedPart[];
 }
 
 /** Request body for creating a profile */
@@ -23,6 +52,7 @@ export interface CreateProfileRequest {
   phone: string;
   age: number;
   profilePictureKey?: string;
+  multipartInfo?: CompleteMultipartRequest;
 }
 
 /** Request body for updating a profile */
@@ -32,6 +62,7 @@ export interface UpdateProfileRequest {
   phone?: string;
   age?: number;
   profilePictureKey?: string;
+  multipartInfo?: CompleteMultipartRequest;
 }
 
 /** Profile response with resolved profile picture URL */
