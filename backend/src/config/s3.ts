@@ -152,7 +152,8 @@ export async function abortMultipartUploadS3(
  * Used to serve profile pictures without making the bucket public.
  */
 export async function generatePresignedDownloadUrl(key: string): Promise<string> {
-  return `https://${env.S3_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
+  // Point the URL to your Nginx server and append the /uploads/ route
+  return `https://my-upload-app.duckdns.org/uploads/${key}`;
 }
 
 /**
